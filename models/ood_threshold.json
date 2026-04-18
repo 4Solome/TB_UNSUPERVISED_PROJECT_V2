@@ -1,1 +1,4 @@
-{"ood_threshold": 0.08286125212907791}
+{
+  "percentile": 95,
+  "threshold": 0.1055147945880889
+}
