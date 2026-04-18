@@ -3,6 +3,5 @@ torch
 numpy
 pandas
 scikit-learn
-seaborn
+matplotlib
 joblib
-shap
