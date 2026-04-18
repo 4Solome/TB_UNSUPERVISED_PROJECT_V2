@@ -79,11 +79,6 @@ def standardize_missing(df):
     return df.replace(MISSING_MARKERS, np.nan)
 
 
-def pd_is_null(arr):
-    import pandas as pd
-    return pd.isna(arr)
-
-
 def to_numeric_safe(arr):
     import pandas as pd
     return pd.to_numeric(arr, errors="coerce")
@@ -157,10 +152,12 @@ def load_ood_threshold():
 
 def infer_decoder_structure_from_feature_names(feature_names):
     """
-    Hardcoded from the actual saved feature_names.json to match training exactly.
+    Exact decoder structure from saved feature_names.json
 
-    Continuous = 7
-    Binary     = 19
+    Continuous:
+      7
+    Binary:
+      19
     Categorical groups:
       region           -> 4
       married          -> 6
@@ -168,13 +165,13 @@ def infer_decoder_structure_from_feature_names(feature_names):
       occupation       -> 10
       xrayres          -> 3
       central_cxr_res  -> 7
-      zn               -> 9
+      zn               -> 10
       genexpert        -> 2
       final_result     -> 3
     """
     n_cont = 7
     n_bin = 19
-    cat_sizes = [4, 6, 7, 10, 3, 7, 9, 2, 3]
+    cat_sizes = [4, 6, 7, 10, 3, 7, 10, 2, 3]
     return n_cont, n_bin, cat_sizes
 
 
