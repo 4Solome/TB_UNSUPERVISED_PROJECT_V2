@@ -17,13 +17,11 @@ device = torch.device("cpu")
 # ============================================================
 MISSING_MARKERS = ["", " ", "na", "nan", "none", "missing", "MISSING"]
 
-# These match your training setup
 LATENT_DIM = 16
 D_MODEL = 64
 NHEAD = 4
 N_LAYERS = 2
 
-# These match the preprocessing notebook you provided
 CONTINUOUS_COLS = [
     "age_census", "cough_d", "fever_d", "wloss_d", "sputum_d", "tbhist_y", "tbtreat_w"
 ]
@@ -45,7 +43,7 @@ ALL_COLS = CONTINUOUS_COLS + BINARY_COLS + CATEGORICAL_COLS
 
 
 # ============================================================
-# SAFE PREPROCESSING (NO PICKLE DEPENDENCY MISMATCH DURING FIT)
+# SAFE PREPROCESSING
 # ============================================================
 def build_preprocessor(continuous_cols, binary_cols, categorical_cols):
     cont_pipe = Pipeline([
@@ -81,35 +79,6 @@ def standardize_missing(df):
     return df.replace(MISSING_MARKERS, np.nan)
 
 
-def coerce_types(df):
-    df = df.copy()
-
-    for c in CONTINUOUS_COLS:
-        if c in df.columns:
-            df[c] = np.where(df[c].isna(), np.nan, df[c])
-            df[c] = df[c].astype("object")
-            df[c] = df[c].replace(MISSING_MARKERS, np.nan)
-            df[c] = df[c].astype("float64", errors="ignore")
-            df[c] = np.asarray(df[c], dtype="float64")
-
-    for c in CONTINUOUS_COLS:
-        if c in df.columns:
-            df[c] = np.asarray(df[c], dtype="float64")
-
-    for c in BINARY_COLS:
-        if c in df.columns:
-            df[c] = np.asarray(df[c], dtype="object")
-            df[c] = np.where(pd_is_null(df[c]), np.nan, df[c])
-            df[c] = to_numeric_safe(df[c])
-            df[c] = np.clip(df[c], 0, 1)
-
-    for c in CATEGORICAL_COLS:
-        if c in df.columns:
-            df[c] = df[c].astype("object")
-
-    return df
-
-
 def pd_is_null(arr):
     import pandas as pd
     return pd.isna(arr)
@@ -120,15 +89,33 @@ def to_numeric_safe(arr):
     return pd.to_numeric(arr, errors="coerce")
 
 
+def coerce_types(df):
+    df = df.copy()
+
+    for c in CONTINUOUS_COLS:
+        if c in df.columns:
+            df[c] = df[c].replace(MISSING_MARKERS, np.nan)
+            df[c] = to_numeric_safe(df[c])
+
+    for c in BINARY_COLS:
+        if c in df.columns:
+            df[c] = df[c].replace(MISSING_MARKERS, np.nan)
+            df[c] = to_numeric_safe(df[c]).clip(0, 1)
+
+    for c in CATEGORICAL_COLS:
+        if c in df.columns:
+            df[c] = df[c].astype("object")
+
+    return df
+
+
 def prepare_input_dataframe(df_raw):
     df = df_raw.copy()
     df = standardize_missing(df)
 
-    # Drop household if present — not used at inference
     if "household" in df.columns:
         df = df.drop(columns=["household"])
 
-    # Ensure required columns exist
     for c in CONTINUOUS_COLS:
         if c not in df.columns:
             df[c] = np.nan
@@ -169,21 +156,25 @@ def load_ood_threshold():
 
 
 def infer_decoder_structure_from_feature_names(feature_names):
-    n_cont = sum(1 for f in feature_names if f.startswith("cont__"))
-    n_bin = sum(1 for f in feature_names if f.startswith("bin__"))
+    """
+    Hardcoded from the actual saved feature_names.json to match training exactly.
 
-    cat_groups = {}
-    for f in feature_names:
-        if f.startswith("cat__"):
-            parts = f.split("_")
-            if len(parts) >= 2:
-                prefix = "_".join(parts[:2])   # e.g. cat__region
-            else:
-                prefix = f
-            cat_groups.setdefault(prefix, 0)
-            cat_groups[prefix] += 1
-
-    cat_sizes = list(cat_groups.values())
+    Continuous = 7
+    Binary     = 19
+    Categorical groups:
+      region           -> 4
+      married          -> 6
+      edu              -> 7
+      occupation       -> 10
+      xrayres          -> 3
+      central_cxr_res  -> 7
+      zn               -> 9
+      genexpert        -> 2
+      final_result     -> 3
+    """
+    n_cont = 7
+    n_bin = 19
+    cat_sizes = [4, 6, 7, 10, 3, 7, 9, 2, 3]
     return n_cont, n_bin, cat_sizes
 
 
@@ -215,11 +206,11 @@ def load_ttvae(input_dim=None):
 # INFERENCE UTILITIES
 # ============================================================
 def transform_input(df_raw, preprocessor, feature_names):
+    import pandas as pd
+
     df = prepare_input_dataframe(df_raw)
     X = preprocessor.transform(df)
 
-    # Align exactly to training feature order
-    import pandas as pd
     X_df = pd.DataFrame(X, columns=preprocessor.get_feature_names_out())
     X_df = X_df.reindex(columns=feature_names, fill_value=0.0)
 
@@ -234,11 +225,6 @@ def compute_latent(model, X):
 
 
 def compute_pseudotime(latents, bounds=None):
-    """
-    Training-consistent pseudotime:
-    - compute PCA(1) over latent space
-    - optionally normalize using saved training bounds
-    """
     pt_raw = PCA(n_components=1, random_state=42).fit_transform(latents).ravel()
 
     if bounds is None:
