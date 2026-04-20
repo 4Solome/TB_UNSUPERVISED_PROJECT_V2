@@ -294,23 +294,6 @@ def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
     return decoded
 
 
-# ============================================================
-# SIDEBAR
-# ============================================================
-st.sidebar.header("Model Artifacts")
-st.sidebar.write(f"Features: {len(feature_names)}")
-st.sidebar.write(f"OOD percentile: {OOD_PERCENTILE}")
-st.sidebar.write(f"OOD threshold: {OOD_THRESHOLD:.6f}")
-st.sidebar.write(
-    f"Pseudotime bounds: [{PT_BOUNDS['min']:.3f}, {PT_BOUNDS['max']:.3f}]"
-)
-
-st.sidebar.header("Expected Input Columns")
-st.sidebar.caption("The app will auto-fill missing columns, but these are the trained schema fields.")
-st.sidebar.write("Continuous:", CONTINUOUS_COLS)
-st.sidebar.write("Binary:", BINARY_COLS)
-st.sidebar.write("Categorical:", CATEGORICAL_COLS)
-
 
 # ============================================================
 # UPLOAD + ANALYSIS
