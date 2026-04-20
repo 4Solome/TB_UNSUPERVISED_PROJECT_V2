@@ -234,6 +234,8 @@ def compute_pseudotime(latents, bounds=None):
 
 
 def assign_cluster(kmeans, latents):
+    target_dtype = kmeans.cluster_centers_.dtype
+    latents = np.asarray(latents, dtype=target_dtype)
     return kmeans.predict(latents)
 
 
