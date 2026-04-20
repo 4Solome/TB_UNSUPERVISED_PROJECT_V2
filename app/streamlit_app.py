@@ -216,4 +216,3 @@ st.caption(
     "This system is intended for research and analytical use only. "
     "Synthetic data is not real patient data."
 )
-``
