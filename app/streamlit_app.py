@@ -1,5 +1,3 @@
-import json
-import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,6 +8,7 @@ from utils import (
     CONTINUOUS_COLS,
     BINARY_COLS,
     CATEGORICAL_COLS,
+    build_runtime_preprocessor,
     prepare_input_dataframe,
     load_ttvae,
     load_feature_names,
@@ -39,13 +38,13 @@ st.caption(
 
 # ============================================================
 # INTERPRETABLE CLUSTER DEFINITIONS
-# Ordered by risk progression from your saved cluster outputs:
+# Ordered by risk progression:
 # 3 -> 1 -> 4 -> 2 -> 0
 # ============================================================
 CLUSTER_INFO = {
     3: {
         "name": "High-Risk / Active TB Phenotype",
-        "stage": "Earliest / Most severe risk stage",
+        "stage": "Earliest / most severe risk stage",
         "risk": "High Risk",
         "summary": "Strong cough, chest pain, sputum and other symptomatic TB signals.",
         "key_features": ["cough", "chest_pain", "sputum", "fever", "weight_loss"],
@@ -88,16 +87,12 @@ LATENT_DIM = 16
 
 ALL_COLS = CONTINUOUS_COLS + BINARY_COLS + CATEGORICAL_COLS
 
-
 # ============================================================
 # CACHED LOADERS
 # ============================================================
 @st.cache_resource
 def load_preprocessor():
-    try:
-        return joblib.load("models/preprocessor.joblib")
-    except Exception:
-        return joblib.load("models/preprocessor.pkl")
+    return build_runtime_preprocessor()
 
 
 @st.cache_resource
@@ -113,11 +108,8 @@ def load_all_artifacts():
 
 feature_names, model, kmeans, preprocessor, PT_BOUNDS, OOD_INFO = load_all_artifacts()
 
-OOD_THRESHOLD = float(
-    OOD_INFO.get("threshold", OOD_INFO.get("ood_threshold", 0.0))
-)
+OOD_THRESHOLD = float(OOD_INFO.get("threshold", OOD_INFO.get("ood_threshold", 0.0)))
 OOD_PERCENTILE = int(OOD_INFO.get("percentile", 95))
-
 
 # ============================================================
 # HELPERS
@@ -235,6 +227,8 @@ def plot_pseudotime_distribution(results_df):
 
 
 def build_cluster_summary(results_df):
+    order_map = {c: i for i, c in enumerate(CLUSTER_ORDER)}
+
     summary = (
         results_df.groupby(["Cluster", "Phenotype", "Risk Category"], as_index=False)
         .agg(
@@ -242,7 +236,7 @@ def build_cluster_summary(results_df):
             Mean_Pseudotime=("Pseudotime (0-1)", "mean"),
             Mean_Reconstruction_Error=("Reconstruction Error", "mean"),
         )
-        .sort_values("Cluster", key=lambda s: s.map({c: i for i, c in enumerate(CLUSTER_ORDER)}))
+        .sort_values("Cluster", key=lambda s: s.map(order_map))
     )
 
     summary["Mean_Pseudotime"] = summary["Mean_Pseudotime"].round(3)
@@ -261,18 +255,41 @@ def build_cluster_feature_profiles(df_clean, clusters):
     ordered_cols = ["Cluster", "Phenotype"] + [
         c for c in profile_means.columns if c not in ["Cluster", "Phenotype"]
     ]
-    profile_means = profile_means[ordered_cols]
-    return profile_means
+    return profile_means[ordered_cols]
 
 
 def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
+    """
+    Convert synthetic rows from transformed feature space into a cleaner,
+    human-readable schema for display and CSV download.
+    """
     decoded = pd.DataFrame()
 
+    def rescale_and_round(series, max_value, min_value=0):
+        vals = series.clip(0, 1) * (max_value - min_value) + min_value
+        return vals.round().astype(int)
+
     # Continuous
-    for col in CONTINUOUS_COLS:
-        tcol = f"cont__{col}"
-        if tcol in syn_df.columns:
-            decoded[col] = syn_df[tcol].clip(0, 1)
+    if "cont__age_census" in syn_df.columns:
+        decoded["age_census"] = rescale_and_round(syn_df["cont__age_census"], 100)
+
+    if "cont__cough_d" in syn_df.columns:
+        decoded["cough_d"] = rescale_and_round(syn_df["cont__cough_d"], 30)
+
+    if "cont__fever_d" in syn_df.columns:
+        decoded["fever_d"] = rescale_and_round(syn_df["cont__fever_d"], 30)
+
+    if "cont__wloss_d" in syn_df.columns:
+        decoded["wloss_d"] = rescale_and_round(syn_df["cont__wloss_d"], 365)
+
+    if "cont__sputum_d" in syn_df.columns:
+        decoded["sputum_d"] = rescale_and_round(syn_df["cont__sputum_d"], 30)
+
+    if "cont__tbhist_y" in syn_df.columns:
+        decoded["tbhist_y"] = rescale_and_round(syn_df["cont__tbhist_y"], 35, min_value=1990)
+
+    if "cont__tbtreat_w" in syn_df.columns:
+        decoded["tbtreat_w"] = rescale_and_round(syn_df["cont__tbtreat_w"], 52)
 
     # Binary
     for col in BINARY_COLS:
@@ -285,11 +302,16 @@ def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
         prefix = f"cat__{col}_"
         matching = [c for c in syn_df.columns if c.startswith(prefix)]
         if matching:
-            decoded[col] = (
-                syn_df[matching]
-                .idxmax(axis=1)
-                .str.replace(prefix, "", regex=False)
-            )
+            vals = syn_df[matching].idxmax(axis=1).str.replace(prefix, "", regex=False)
+
+            if col in ["married", "edu", "occupation", "xrayres", "central_cxr_res", "final_result"]:
+                vals = vals.str.replace(".0", "", regex=False)
+
+            decoded[col] = vals
+
+    for col in ["married", "edu", "occupation", "xrayres", "central_cxr_res", "final_result"]:
+        if col in decoded.columns:
+            decoded[col] = pd.to_numeric(decoded[col], errors="ignore")
 
     return decoded
 
@@ -311,7 +333,6 @@ st.sidebar.write("Continuous:", CONTINUOUS_COLS)
 st.sidebar.write("Binary:", BINARY_COLS)
 st.sidebar.write("Categorical:", CATEGORICAL_COLS)
 
-
 # ============================================================
 # UPLOAD + ANALYSIS
 # ============================================================
@@ -329,6 +350,7 @@ pseudotime_norm = None
 clusters = None
 rec_error = None
 ood_flags = None
+df_raw = None
 
 if uploaded_file and analyze:
     try:
@@ -367,7 +389,6 @@ if uploaded_file and analyze:
         )
         st.exception(e)
         st.stop()
-
 
 # ============================================================
 # RESULTS
@@ -430,7 +451,8 @@ if results is not None:
         )
 
     with st.expander("Uploaded Data Preview", expanded=False):
-        st.dataframe(df_clean.head(200), use_container_width=True)
+        if df_raw is not None:
+            st.dataframe(df_raw.head(200), use_container_width=True)
 
     st.download_button(
         "Download Patient-Level Results",
@@ -438,7 +460,6 @@ if results is not None:
         file_name="tb_risk_results.csv",
         mime="text/csv",
     )
-
 
 # ============================================================
 # SYNTHETIC DATA GENERATION
