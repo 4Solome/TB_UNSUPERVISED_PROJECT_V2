@@ -1,5 +1,3 @@
-
-
 import json
 import joblib
 import numpy as np
@@ -609,60 +607,38 @@ def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
     return decoded
 
 
-import textwrap
-
 # ============================================================
-# HERO SECTION
+# HERO SECTION (CLEAN STREAMLIT VERSION)
 # ============================================================
-left_col, right_col = st.columns([1.45, 0.9], gap="large")
+left_col, right_col = st.columns([1.5, 1])
 
 with left_col:
+    st.markdown("### ✦ AI-POWERED")
+    
     st.markdown(
-        textwrap.dedent("""
-        <div class="hero-wrap">
-            <div class="hero-badge">✦ AI-POWERED</div>
-            <div class="hero-title">TB Risk Profiling System</div>
-            <div class="hero-subtitle">
-                Unsupervised representation learning and generative modeling for latent
-                tuberculosis risk sequencing and phenotype discovery.
-            </div>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-title">🛡 Privacy Preserving</div>
-                    <div class="feature-text">
-                        Generative synthetic data workflows without exposing real patient records.
-                    </div>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-title">✦ Advanced AI</div>
-                    <div class="feature-text">
-                        Representation learning and latent progression modeling for phenotype discovery.
-                    </div>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-title">📊 Actionable Insights</div>
-                    <div class="feature-text">
-                        Identify high-risk patterns, progression position, and interpretable cohort structure.
-                    </div>
-                </div>
-            </div>
-        </div>
-        """),
-        unsafe_allow_html=True,
+        "# TB Risk Profiling System"
     )
-with right_col:
+    
     st.markdown(
         """
-        <div class="visual-card">
-            <div class="lung">🫁</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+        Unsupervised representation learning and generative modeling for latent
+        tuberculosis risk sequencing and phenotype discovery.
+        """
     )
 
+    # Feature highlights
+    st.markdown("#### Key Capabilities")
+    
+    st.markdown("🛡 **Privacy Preserving**  \nGenerative synthetic data without exposing real patients")
+    
+    st.markdown("✦ **Advanced AI**  \nLatent representation learning and progression modeling")
+    
+    st.markdown("📊 **Actionable Insights**  \nIdentify high-risk patterns and patient phenotypes")
+
+
+with right_col:
+    st.markdown("## 🫁")
+    st.markdown("### TB Risk Visualization")
 
 # ============================================================
 # UPLOAD + ANALYSIS
