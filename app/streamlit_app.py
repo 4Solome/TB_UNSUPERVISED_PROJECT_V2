@@ -49,6 +49,8 @@ st.markdown(
         --purple: #7c4dff;
         --cyan: #2dd4bf;
         --blue: #3b82f6;
+        --green: #10b981;
+        --green-2: #059669;
     }
 
     .stApp {
@@ -65,7 +67,7 @@ st.markdown(
         max-width: 1320px;
     }
 
-    h1, h2, h3, h4, h5, h6, p, label, div {
+    h1, h2, h3, h4, h5, h6, p, label, div, span {
         color: var(--text);
     }
 
@@ -258,6 +260,7 @@ st.markdown(
         font-weight: 800;
     }
 
+    /* Main buttons */
     .stButton > button {
         border: none !important;
         border-radius: 14px !important;
@@ -267,13 +270,27 @@ st.markdown(
         color: white !important;
         background: linear-gradient(90deg, var(--pink), var(--purple)) !important;
         box-shadow: 0 10px 25px rgba(124,77,255,0.26) !important;
+        transition: all 0.2s ease !important;
+        opacity: 1 !important;
     }
 
     .stButton > button:hover {
-        filter: brightness(1.06);
-        transform: translateY(-1px);
+        filter: brightness(1.08) !important;
+        transform: translateY(-1px) !important;
     }
 
+    .stButton > button:focus,
+    .stButton > button:active {
+        outline: none !important;
+        box-shadow: 0 0 0 0.2rem rgba(124, 77, 255, 0.25) !important;
+    }
+
+    .stButton > button:disabled {
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    /* File uploader container */
     div[data-testid="stFileUploader"] {
         background: rgba(10, 16, 30, 0.72);
         border: 1px solid rgba(114, 137, 218, 0.18);
@@ -281,12 +298,63 @@ st.markdown(
         padding: 0.9rem;
     }
 
+    /* File uploader button */
+    div[data-testid="stFileUploader"] section button,
+    div[data-testid="stFileUploader"] button[kind="secondary"] {
+        background: linear-gradient(90deg, var(--blue), var(--purple)) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 0.7rem 1.1rem !important;
+        opacity: 1 !important;
+        box-shadow: 0 8px 20px rgba(59,130,246,0.24) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div[data-testid="stFileUploader"] section button:hover,
+    div[data-testid="stFileUploader"] button[kind="secondary"]:hover {
+        filter: brightness(1.08) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    div[data-testid="stFileUploader"] small,
+    div[data-testid="stFileUploader"] span {
+        color: var(--muted) !important;
+    }
+
+    /* Download buttons */
+    div[data-testid="stDownloadButton"] > button {
+        background: linear-gradient(90deg, var(--green), var(--green-2)) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 0.78rem 1.2rem !important;
+        opacity: 1 !important;
+        box-shadow: 0 8px 20px rgba(16,185,129,0.22) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div[data-testid="stDownloadButton"] > button:hover {
+        filter: brightness(1.08) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    div[data-testid="stDownloadButton"] > button:focus,
+    div[data-testid="stDownloadButton"] > button:active {
+        outline: none !important;
+        box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.22) !important;
+    }
+
+    /* Inputs */
     div[data-baseweb="select"] > div,
     div[data-baseweb="input"] > div,
     .stSlider {
         background: transparent;
     }
 
+    /* Tables and expanders */
     .stDataFrame, .stTable, div[data-testid="stExpander"] {
         border-radius: 18px;
         overflow: hidden;
@@ -305,12 +373,15 @@ st.markdown(
         .hero-title {
             font-size: 2.8rem;
         }
+
         .feature-grid {
             grid-template-columns: 1fr;
         }
+
         .visual-card {
             min-height: 240px;
         }
+
         .lung {
             font-size: 6rem;
         }
@@ -319,6 +390,10 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+
+
 
 # ============================================================
 # INTERPRETABLE CLUSTER DEFINITIONS
