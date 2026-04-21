@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import torch
+import textwrap
 
 from utils import (
     CONTINUOUS_COLS,
@@ -578,34 +579,6 @@ def build_cluster_feature_profiles(df_clean, clusters):
     return profile_means
 
 
-def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
-    decoded = pd.DataFrame()
-
-    # Continuous
-    for col in CONTINUOUS_COLS:
-        tcol = f"cont__{col}"
-        if tcol in syn_df.columns:
-            decoded[col] = syn_df[tcol].clip(0, 1)
-
-    # Binary
-    for col in BINARY_COLS:
-        tcol = f"bin__{col}"
-        if tcol in syn_df.columns:
-            decoded[col] = (syn_df[tcol] >= 0.5).astype(int)
-
-    # Categorical
-    for col in CATEGORICAL_COLS:
-        prefix = f"cat__{col}_"
-        matching = [c for c in syn_df.columns if c.startswith(prefix)]
-        if matching:
-            decoded[col] = (
-                syn_df[matching]
-                .idxmax(axis=1)
-                .str.replace(prefix, "", regex=False)
-            )
-
-    return decoded
-
 
 # ============================================================
 # HERO SECTION (BETTER ALIGNED STREAMLIT VERSION)
@@ -821,15 +794,125 @@ if results is not None:
         mime="text/csv",
     )
 
-# ============================================================
-# SYNTHETIC DATA GENERATION
-# ============================================================
-st.divider()
-st.header("Synthetic Patient Generation")
 
-num_samples = st.slider("Number of synthetic patients", 10, 200, 50)
 
-if st.button("Generate Synthetic Patients"):
+
+
+# ============================================================
+# SYNTHETIC DECODER (FIXED ✅)
+# ============================================================
+def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
+    """
+    Properly decode synthetic samples from transformed space into
+    human-readable clinical-like values.
+    """
+
+    decoded = pd.DataFrame(index=syn_df.index)
+
+    def rescale(series, max_val, min_val=0):
+        return (series.clip(0, 1) * (max_val - min_val) + min_val).round().astype(int)
+
+    # Explicit continuous schema (CRITICAL)
+    CONT_SCHEMA = {
+        "age_census": (100, 0),
+        "cough_d": (30, 0),
+        "fever_d": (30, 0),
+        "wloss_d": (365, 0),
+        "sputum_d": (30, 0),
+        "tbhist_y": (35, 1990),
+        "tbtreat_w": (52, 0),
+    }
+
+    # Continuous
+    for col, (mx, mn) in CONT_SCHEMA.items():
+        tcol = f"cont__{col}"
+        if tcol in syn_df.columns:
+            decoded[col] = rescale(syn_df[tcol], mx, mn)
+
+    # Binary
+    for col in BINARY_COLS:
+        tcol = f"bin__{col}"
+        if tcol in syn_df.columns:
+            decoded[col] = (syn_df[tcol] >= 0.5).astype(int)
+
+    # Categorical
+    for col in CATEGORICAL_COLS:
+        prefix = f"cat__{col}_"
+        matches = [c for c in syn_df.columns if c.startswith(prefix)]
+        if matches:
+            vals = (
+                syn_df[matches]
+                .idxmax(axis=1)
+                .str.replace(prefix, "", regex=False)
+                .str.replace(".0", "", regex=False)
+            )
+            decoded[col] = vals
+
+    return decoded
+
+
+
+
+# ============================================================
+# SYNTHETIC DATA GENERATION (STYLED)
+# ============================================================
+
+st.markdown(
+    textwrap.dedent("""
+    <div style="
+        background: linear-gradient(180deg, rgba(13,20,38,0.96), rgba(8,14,28,0.98));
+        border: 1px solid rgba(114, 137, 218, 0.20);
+        border-radius: 24px;
+        padding: 1.4rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    ">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="
+                width:52px; height:52px;
+                border-radius:16px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:22px;
+                background: linear-gradient(135deg, rgba(45,212,191,0.25), rgba(124,77,255,0.25));
+                border: 1px solid rgba(124,77,255,0.25);
+            ">
+                👥
+            </div>
+            <div>
+                <div style="font-size:22px; font-weight:800;">
+                    Synthetic Patient Generation
+                </div>
+                <div style="color:#a8b2d1; font-size:14px;">
+                    Generate realistic synthetic TB patient profiles for testing and analysis
+                </div>
+            </div>
+        </div>
+    """),
+    unsafe_allow_html=True,
+)
+
+# Layout inside card
+col1, col2 = st.columns([1.2, 1])
+
+with col1:
+    num_samples = st.slider(
+        "Number of synthetic patients",
+        10, 200, 50
+    )
+
+with col2:
+    st.markdown("<br>", unsafe_allow_html=True)
+    generate_clicked = st.button("✨ Generate Synthetic Patients")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ============================================================
+# GENERATION LOGIC (UNCHANGED)
+# ============================================================
+
+if generate_clicked:
     z = torch.randn(num_samples, LATENT_DIM)
 
     with torch.no_grad():
@@ -838,17 +921,35 @@ if st.button("Generate Synthetic Patients"):
     syn_df = pd.DataFrame(syn_array, columns=feature_names)
     decoded = decode_synthetic_from_transformed(syn_df)
 
-    st.success(f"Generated {num_samples} readable synthetic patient records.")
+    st.success(f"Generated {num_samples} synthetic patient records.")
+
+    st.markdown("### Preview of Generated Data")
     st.dataframe(decoded.head(10), use_container_width=True)
 
     st.download_button(
-        "Download Synthetic Dataset",
+        "⬇ Download Synthetic Dataset",
         decoded.to_csv(index=False),
         file_name="synthetic_tb_patients.csv",
         mime="text/csv",
     )
 
-st.caption(
-    "Synthetic records are statistically plausible but not real patients. "
-    "They must not be used directly for clinical decision-making."
+# ============================================================
+# FOOTER NOTE
+# ============================================================
+
+st.markdown(
+    textwrap.dedent("""
+    <div style="
+        margin-top: 1rem;
+        padding: 0.9rem;
+        border-radius: 16px;
+        background: rgba(8, 13, 26, 0.6);
+        border: 1px solid rgba(114, 137, 218, 0.18);
+        color: #a8b2d1;
+        font-size: 14px;
+    ">
+        ⚠️ Synthetic records are statistically plausible but not real patients and must not be used directly for clinical decision-making.
+    </div>
+    """),
+    unsafe_allow_html=True,
 )
