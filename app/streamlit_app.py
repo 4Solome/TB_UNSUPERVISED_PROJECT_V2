@@ -821,69 +821,15 @@ if results is not None:
         mime="text/csv",
     )
 
-
-import textwrap
-
 # ============================================================
-# SYNTHETIC DATA GENERATION (STYLED)
+# SYNTHETIC DATA GENERATION
 # ============================================================
+st.divider()
+st.header("Synthetic Patient Generation")
 
-st.markdown(
-    textwrap.dedent("""
-    <div style="
-        background: linear-gradient(180deg, rgba(13,20,38,0.96), rgba(8,14,28,0.98));
-        border: 1px solid rgba(114, 137, 218, 0.20);
-        border-radius: 24px;
-        padding: 1.4rem;
-        margin-top: 1.5rem;
-        margin-bottom: 1.5rem;
-    ">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="
-                width:52px; height:52px;
-                border-radius:16px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-size:22px;
-                background: linear-gradient(135deg, rgba(45,212,191,0.25), rgba(124,77,255,0.25));
-                border: 1px solid rgba(124,77,255,0.25);
-            ">
-                👥
-            </div>
-            <div>
-                <div style="font-size:22px; font-weight:800;">
-                    Synthetic Patient Generation
-                </div>
-                <div style="color:#a8b2d1; font-size:14px;">
-                    Generate realistic synthetic TB patient profiles for testing and analysis
-                </div>
-            </div>
-        </div>
-    """),
-    unsafe_allow_html=True,
-)
+num_samples = st.slider("Number of synthetic patients", 10, 200, 50)
 
-# Layout inside card
-col1, col2 = st.columns([1.2, 1])
-
-with col1:
-    num_samples = st.slider(
-        "Number of synthetic patients",
-        10, 200, 50
-    )
-
-with col2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    generate_clicked = st.button("✨ Generate Synthetic Patients")
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ============================================================
-# GENERATION LOGIC (UNCHANGED)
-# ============================================================
-
-if generate_clicked:
+if st.button("Generate Synthetic Patients"):
     z = torch.randn(num_samples, LATENT_DIM)
 
     with torch.no_grad():
@@ -892,35 +838,17 @@ if generate_clicked:
     syn_df = pd.DataFrame(syn_array, columns=feature_names)
     decoded = decode_synthetic_from_transformed(syn_df)
 
-    st.success(f"Generated {num_samples} synthetic patient records.")
-
-    st.markdown("### Preview of Generated Data")
+    st.success(f"Generated {num_samples} readable synthetic patient records.")
     st.dataframe(decoded.head(10), use_container_width=True)
 
     st.download_button(
-        "⬇ Download Synthetic Dataset",
+        "Download Synthetic Dataset",
         decoded.to_csv(index=False),
         file_name="synthetic_tb_patients.csv",
         mime="text/csv",
     )
 
-# ============================================================
-# FOOTER NOTE
-# ============================================================
-
-st.markdown(
-    textwrap.dedent("""
-    <div style="
-        margin-top: 1rem;
-        padding: 0.9rem;
-        border-radius: 16px;
-        background: rgba(8, 13, 26, 0.6);
-        border: 1px solid rgba(114, 137, 218, 0.18);
-        color: #a8b2d1;
-        font-size: 14px;
-    ">
-        ⚠️ Synthetic records are statistically plausible but not real patients and must not be used directly for clinical decision-making.
-    </div>
-    """),
-    unsafe_allow_html=True,
+st.caption(
+    "Synthetic records are statistically plausible but not real patients. "
+    "They must not be used directly for clinical decision-making."
 )
