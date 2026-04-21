@@ -1,3 +1,5 @@
+
+
 import json
 import joblib
 import numpy as np
@@ -608,17 +610,13 @@ def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
 
 
 # ============================================================
-# HERO SECTION (CLEAN STREAMLIT VERSION)
+# HERO SECTION (BETTER ALIGNED STREAMLIT VERSION)
 # ============================================================
-left_col, right_col = st.columns([1.5, 1])
+left_col, right_col = st.columns([1.6, 1], gap="large")
 
 with left_col:
     st.markdown("### ✦ AI-POWERED")
-    
-    st.markdown(
-        "# TB Risk Profiling System"
-    )
-    
+    st.markdown("# TB Risk Profiling System")
     st.markdown(
         """
         Unsupervised representation learning and generative modeling for latent
@@ -626,19 +624,39 @@ with left_col:
         """
     )
 
-    # Feature highlights
-    st.markdown("#### Key Capabilities")
-    
-    st.markdown("🛡 **Privacy Preserving**  \nGenerative synthetic data without exposing real patients")
-    
-    st.markdown("✦ **Advanced AI**  \nLatent representation learning and progression modeling")
-    
-    st.markdown("📊 **Actionable Insights**  \nIdentify high-risk patterns and patient phenotypes")
+    st.markdown("### Key Capabilities")
 
+    st.markdown(
+        """
+        **🛡 Privacy Preserving**  
+        Generative synthetic data without exposing real patients
+        """
+    )
+
+    st.markdown(
+        """
+        **✦ Advanced AI**  
+        Latent representation learning and progression modeling
+        """
+    )
+
+    st.markdown(
+        """
+        **📊 Actionable Insights**  
+        Identify high-risk patterns and patient phenotypes
+        """
+    )
 
 with right_col:
-    st.markdown("## 🫁")
-    st.markdown("### TB Risk Visualization")
+    st.markdown("<div style='height: 70px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align: center; font-size: 120px;'>🫁</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<h3 style='text-align: center; margin-top: -10px;'>TB Risk Visualization</h3>",
+        unsafe_allow_html=True,
+    )
 
 # ============================================================
 # UPLOAD + ANALYSIS
