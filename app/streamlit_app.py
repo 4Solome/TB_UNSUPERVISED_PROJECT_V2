@@ -1,3 +1,5 @@
+
+
 import json
 import joblib
 import numpy as np
@@ -27,7 +29,7 @@ from utils import (
 # ============================================================
 st.set_page_config(
     page_title="TB Risk Profiling System",
-    page_icon="🫁",
+    page_icon="📊🫁",
     layout="wide",
 )
 
@@ -607,6 +609,8 @@ def decode_synthetic_from_transformed(syn_df: pd.DataFrame):
     return decoded
 
 
+import textwrap
+
 # ============================================================
 # HERO SECTION
 # ============================================================
@@ -614,7 +618,7 @@ left_col, right_col = st.columns([1.45, 0.9], gap="large")
 
 with left_col:
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="hero-wrap">
             <div class="hero-badge">✦ AI-POWERED</div>
             <div class="hero-title">TB Risk Profiling System</div>
@@ -630,12 +634,14 @@ with left_col:
                         Generative synthetic data workflows without exposing real patient records.
                     </div>
                 </div>
+
                 <div class="feature-card">
                     <div class="feature-title">✦ Advanced AI</div>
                     <div class="feature-text">
                         Representation learning and latent progression modeling for phenotype discovery.
                     </div>
                 </div>
+
                 <div class="feature-card">
                     <div class="feature-title">📊 Actionable Insights</div>
                     <div class="feature-text">
@@ -644,10 +650,9 @@ with left_col:
                 </div>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
-
 with right_col:
     st.markdown(
         """
