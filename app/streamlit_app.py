@@ -590,8 +590,7 @@ with left_col:
     st.markdown("# TB Risk Profiling System")
     st.markdown(
         """
-        Unsupervised representation learning and generative modeling for latent
-        tuberculosis risk sequencing and phenotype discovery.
+        latent tuberculosis risk sequencing and phenotype discovery.
         """
     )
 
@@ -652,14 +651,6 @@ uploaded_file = st.file_uploader(
     label_visibility="collapsed",
 )
 
-st.markdown(
-    """
-    <div class="soft-note">
-        Our system will auto-fill missing columns based on the trained schema.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 analyze = st.button("Analyze Cohort", type="primary")
 
